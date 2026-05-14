@@ -557,94 +557,139 @@ def api_chart(symbol):
 HTML = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
 <title>MACD Scanner</title>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#070a0f;--bg2:#0c0f18;--bg3:#111520;--border:#1a1f30;
-  --blue:#4d9fff;--green:#00e5a0;--red:#ff4d6d;--gold:#f0b429;--purple:#a78bfa;
-  --text:#e2e8f8;--muted:#4a5578;--card:#0c0f17;}
-*{margin:0;padding:0;box-sizing:border-box;}
-body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-height:100vh;}
-body::before{content:'';position:fixed;inset:0;
-  background:radial-gradient(ellipse at 10% 30%,rgba(77,159,255,0.04) 0%,transparent 55%),
-             radial-gradient(ellipse at 90% 70%,rgba(0,229,160,0.03) 0%,transparent 50%);
-  pointer-events:none;}
+:root{
+  --bg:#07090e;--bg2:#0b0e16;--bg3:#10131c;--border:#181d2a;
+  --blue:#4d9fff;--green:#00e5a0;--red:#ff4d6d;--gold:#f0b429;
+  --text:#e2e8f8;--muted:#4a5578;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-height:100vh;overflow-x:hidden;}
 
-header{padding:16px 28px;border-bottom:1px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
-  background:rgba(7,10,15,.97);backdrop-filter:blur(12px);position:sticky;top:0;z-index:100;}
-.logo{font-family:'Outfit',sans-serif;font-weight:900;font-size:20px;letter-spacing:-0.5px;}
+/* ── HEADER ── */
+header{
+  padding:12px 16px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;
+  background:rgba(7,9,14,.98);backdrop-filter:blur(12px);
+  position:sticky;top:0;z-index:100;
+}
+.logo{font-family:'Outfit',sans-serif;font-weight:900;font-size:18px;letter-spacing:-0.5px;}
 .logo span{color:var(--blue);}
-.logo sub{font-size:10px;color:var(--muted);font-weight:400;letter-spacing:2px;margin-left:8px;vertical-align:middle;}
-.hright{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-.status-chip{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted);
-  background:var(--bg3);border:1px solid var(--border);padding:6px 12px;border-radius:20px;}
-.pulse{width:6px;height:6px;border-radius:50%;background:var(--green);
-  box-shadow:0 0 6px var(--green);animation:p 2s infinite;}
-@keyframes p{0%,100%{opacity:1}50%{opacity:.2}}
-.btn{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;letter-spacing:1.5px;
-  text-transform:uppercase;padding:8px 18px;border-radius:6px;border:none;cursor:pointer;transition:all .2s;}
-.btn-primary{background:var(--blue);color:#fff;}
-.btn-primary:hover{background:#3d8fff;box-shadow:0 0 16px rgba(77,159,255,0.35);}
-.btn-primary:disabled{opacity:.4;cursor:not-allowed;}
+.logo sub{font-size:9px;color:var(--muted);font-weight:400;letter-spacing:1.5px;margin-left:6px;vertical-align:middle;}
+.hright{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
 
-#prog-wrap{display:none;padding:0 28px;border-bottom:1px solid var(--border);background:var(--bg2);}
-.prog-row{display:flex;align-items:center;gap:12px;padding:9px 0;}
-.prog-label{font-size:10px;color:var(--muted);letter-spacing:1px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.prog-track{width:100px;height:2px;background:var(--border);border-radius:1px;overflow:hidden;flex-shrink:0;}
+.status-chip{display:flex;align-items:center;gap:5px;font-size:9px;color:var(--muted);
+  background:var(--bg3);border:1px solid var(--border);padding:5px 10px;border-radius:20px;}
+.pulse{width:5px;height:5px;border-radius:50%;background:var(--green);
+  box-shadow:0 0 5px var(--green);animation:p 2s infinite;}
+@keyframes p{0%,100%{opacity:1}50%{opacity:.2}}
+
+.btn{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;letter-spacing:1px;
+  text-transform:uppercase;padding:8px 14px;border-radius:6px;border:none;
+  cursor:pointer;transition:all .2s;white-space:nowrap;}
+.btn-primary{background:var(--blue);color:#fff;}
+.btn-primary:hover{background:#3d8fff;}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;}
+.btn-sm{padding:6px 12px;font-size:10px;}
+
+/* ── AUTO CONTROLS ── */
+.auto-row{display:flex;align-items:center;gap:6px;background:var(--bg3);
+  border:1px solid var(--border);border-radius:6px;padding:5px 10px;}
+.auto-lbl{font-size:9px;color:var(--muted);letter-spacing:1px;}
+.toggle-track{position:relative;width:32px;height:18px;background:var(--blue);
+  border-radius:9px;cursor:pointer;transition:.2s;flex-shrink:0;}
+.toggle-thumb{position:absolute;top:2px;left:15px;width:14px;height:14px;
+  background:#fff;border-radius:50%;transition:.2s;}
+select.auto-sel{background:transparent;border:none;color:var(--text);
+  font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;outline:none;
+  -webkit-appearance:none;padding-right:4px;}
+.countdown{font-size:10px;color:var(--muted);background:var(--bg3);
+  border:1px solid var(--border);padding:5px 10px;border-radius:6px;
+  font-family:'DM Mono',monospace;letter-spacing:1px;min-width:80px;text-align:center;}
+
+/* ── PROGRESS ── */
+#prog-wrap{display:none;padding:0 16px;border-bottom:1px solid var(--border);background:var(--bg2);}
+.prog-row{display:flex;align-items:center;gap:10px;padding:8px 0;}
+.prog-label{font-size:10px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.prog-track{width:80px;height:2px;background:var(--border);border-radius:1px;overflow:hidden;flex-shrink:0;}
 .prog-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:1px;transition:width .3s;width:0%;}
 .prog-fill.ind{width:25%;animation:ind 1s ease-in-out infinite;}
 @keyframes ind{0%{transform:translateX(-300%)}100%{transform:translateX(700%)}}
 
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;
+/* ── STAT CARDS ── */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
   background:var(--border);border-bottom:1px solid var(--border);}
-.stat{background:var(--bg2);padding:13px 18px;cursor:pointer;transition:background .15s;user-select:none;}
-.stat:hover{background:var(--bg3);}
+@media(min-width:600px){.stats{grid-template-columns:repeat(4,1fr);}}
+@media(min-width:900px){.stats{grid-template-columns:repeat(7,1fr);}}
+.stat{background:var(--bg2);padding:10px 12px;cursor:pointer;
+  transition:background .15s;user-select:none;-webkit-user-select:none;}
+.stat:hover,.stat:active{background:var(--bg3);}
 .stat.active{background:rgba(77,159,255,0.08);border-bottom:2px solid var(--blue);}
-.stat-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:5px;}
-.stat-val{font-family:'Outfit',sans-serif;font-size:26px;font-weight:700;line-height:1;}
-.g{color:var(--green)}.b{color:var(--blue)}.r{color:var(--red)}.gold{color:var(--gold)}.grey{color:var(--muted);font-size:14px!important;}
+.stat-lbl{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.stat-val{font-family:'Outfit',sans-serif;font-size:22px;font-weight:700;line-height:1;}
+.g{color:var(--green)}.b{color:var(--blue)}.gold{color:var(--gold)}.grey{color:var(--muted);font-size:13px!important;}
 
-#alert-box{display:none;padding:9px 28px;font-size:11px;color:var(--blue);
-  background:rgba(77,159,255,0.05);border-bottom:1px solid rgba(77,159,255,0.15);}
+/* ── ALERT ── */
+#alert-box{display:none;padding:8px 16px;font-size:11px;color:var(--gold);
+  background:rgba(240,180,41,0.05);border-bottom:1px solid rgba(240,180,41,0.15);
+  line-height:1.6;word-break:break-word;}
 
-.filters{padding:11px 28px;display:flex;gap:14px;flex-wrap:wrap;align-items:center;
-  border-bottom:1px solid var(--border);background:var(--bg2);}
-.fl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;}
-.fg{display:flex;gap:5px;flex-wrap:wrap;}
+/* ── FILTERS ── */
+.filters{padding:10px 16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+  border-bottom:1px solid var(--border);background:var(--bg2);overflow-x:auto;}
+.filters::-webkit-scrollbar{height:0;}
+.fl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;white-space:nowrap;}
+.fg{display:flex;gap:4px;flex-wrap:nowrap;}
 .fc{font-family:'DM Mono',monospace;font-size:10px;background:transparent;
   border:1px solid var(--border);color:var(--muted);padding:4px 10px;border-radius:4px;
-  cursor:pointer;transition:all .15s;text-transform:uppercase;letter-spacing:.5px;}
+  cursor:pointer;transition:all .15s;text-transform:uppercase;white-space:nowrap;
+  -webkit-tap-highlight-color:transparent;}
 .fc:hover,.fc.on{border-color:var(--blue);color:var(--blue);background:rgba(77,159,255,0.06);}
 
-.auto-wrap{display:flex;align-items:center;gap:8px;background:var(--bg3);
-  border:1px solid var(--border);border-radius:6px;padding:6px 12px;}
-.countdown{font-size:10px;color:var(--muted);background:var(--bg3);
-  border:1px solid var(--border);padding:6px 12px;border-radius:6px;
-  font-family:'DM Mono',monospace;letter-spacing:1px;min-width:90px;text-align:center;}
-
-.tw{padding:18px 28px;overflow-x:auto;}
-.tw::-webkit-scrollbar{height:4px;}
-.tw::-webkit-scrollbar-track{background:var(--bg);}
-.tw::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
-.tw::-webkit-scrollbar-thumb:hover{background:var(--muted);}
-.ttl{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:var(--muted);
-  text-transform:uppercase;letter-spacing:3px;margin-bottom:12px;
+/* ── CARDS (mobile) / TABLE (desktop) ── */
+.tw{padding:12px 16px;}
+.ttl{font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;
   display:flex;align-items:center;justify-content:space-between;}
 .rc{font-family:'DM Mono',monospace;font-size:10px;font-weight:400;}
-table{width:100%;border-collapse:collapse;min-width:1100px;}
+
+/* Mobile cards */
+.cards{display:flex;flex-direction:column;gap:8px;}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;
+  padding:12px;cursor:pointer;transition:all .15s;position:relative;}
+.card:active{background:var(--bg3);transform:scale(0.99);}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;}
+.card-pair{font-family:'Outfit',sans-serif;font-weight:700;font-size:16px;}
+.card-vol{font-size:9px;color:var(--muted);margin-top:2px;}
+.card-score{display:flex;flex-direction:column;align-items:flex-end;gap:4px;}
+.card-mid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;}
+.card-cell{background:var(--bg3);border-radius:4px;padding:5px 8px;}
+.card-cell-lbl{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;}
+.card-cell-val{font-size:12px;font-weight:500;}
+.card-bottom{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;}
+.card-reasons{font-size:8px;color:var(--muted);line-height:1.5;flex:1;}
+.card-tags{display:flex;gap:3px;flex-wrap:wrap;}
+
+/* Desktop table (hidden on mobile) */
+.tbl-wrap{display:none;overflow-x:auto;}
+@media(min-width:768px){.cards{display:none;}.tbl-wrap{display:block;}}
+table{width:100%;border-collapse:collapse;min-width:900px;}
 thead tr{border-bottom:1px solid var(--border);}
 th{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;
-  padding:6px 8px;text-align:left;white-space:nowrap;}
-tbody tr{border-bottom:1px solid rgba(26,31,48,0.5);cursor:pointer;transition:background .1s;}
+  padding:7px 10px;text-align:left;white-space:nowrap;}
+tbody tr{border-bottom:1px solid rgba(24,29,42,0.5);cursor:pointer;transition:background .1s;}
 tbody tr:hover{background:rgba(77,159,255,0.025);}
-td{padding:8px 8px;font-size:11px;white-space:nowrap;}
-.pname{font-family:'Outfit',sans-serif;font-weight:700;font-size:15px;}
-.psub{font-size:9px;color:var(--muted);margin-top:2px;}
+td{padding:9px 10px;font-size:11px;white-space:nowrap;}
+.pname{font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;}
+.psub{font-size:9px;color:var(--muted);margin-top:1px;}
 
+/* Score badge */
 .score{display:inline-flex;align-items:center;justify-content:center;
-  min-width:40px;height:22px;padding:0 7px;border-radius:4px;
+  min-width:38px;height:22px;padding:0 6px;border-radius:4px;
   font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;}
 .s-hot {background:rgba(240,180,41,0.15);color:var(--gold);border:1px solid rgba(240,180,41,0.35);}
 .s-good{background:rgba(0,229,160,0.1);color:var(--green);border:1px solid rgba(0,229,160,0.25);}
@@ -652,90 +697,68 @@ td{padding:8px 8px;font-size:11px;white-space:nowrap;}
 .s-low {background:rgba(74,85,120,0.1);color:var(--muted);border:1px solid var(--border);}
 
 /* Signal badges */
-.sig-badge{display:inline-block;padding:3px 8px;border-radius:4px;font-size:9px;
-  font-weight:700;letter-spacing:.5px;text-transform:uppercase;}
+.sig-badge{display:inline-block;padding:3px 7px;border-radius:4px;font-size:9px;
+  font-weight:700;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;}
 .sig-pullback{background:rgba(240,180,41,0.15);color:var(--gold);border:1px solid rgba(240,180,41,0.3);}
 .sig-crossed {background:rgba(0,229,160,0.12);color:var(--green);border:1px solid rgba(0,229,160,0.25);}
 .sig-watch   {background:rgba(77,159,255,0.1);color:var(--blue);border:1px solid rgba(77,159,255,0.2);}
 
-/* Histogram mini bars */
-.hist-bars{display:flex;align-items:flex-end;gap:2px;height:24px;}
-.hist-bar{width:6px;border-radius:1px;}
-
-/* MACD gap indicator */
-.gap-bar{display:flex;align-items:center;gap:5px;font-size:10px;}
-
+/* Tags */
 .tag{display:inline-block;font-size:8px;padding:2px 5px;border-radius:3px;
-  text-transform:uppercase;letter-spacing:.5px;margin-right:2px;cursor:help;position:relative;}
+  text-transform:uppercase;letter-spacing:.5px;margin-right:2px;margin-bottom:2px;}
 .t-green{background:rgba(0,229,160,0.08);color:var(--green);border:1px solid rgba(0,229,160,0.2);}
 .t-gold {background:rgba(240,180,41,0.08);color:var(--gold);border:1px solid rgba(240,180,41,0.2);}
 .t-blue {background:rgba(77,159,255,0.08);color:var(--blue);border:1px solid rgba(77,159,255,0.2);}
 .t-red  {background:rgba(255,77,109,0.08);color:var(--red);border:1px solid rgba(255,77,109,0.2);}
-.tag::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 7px);left:50%;
-  transform:translateX(-50%);background:#0a0c16;color:var(--text);
-  font-size:11px;font-family:'DM Mono',monospace;padding:8px 12px;border-radius:4px;
-  border:1px solid var(--border);white-space:normal;width:220px;line-height:1.5;
-  text-transform:none;letter-spacing:0;z-index:999;opacity:0;pointer-events:none;transition:opacity .15s;}
-.tag:hover::after{opacity:1;}
 
-.score-tip{cursor:help;position:relative;}
-.score-tip::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 7px);
-  left:50%;transform:translateX(-50%);background:#0a0c16;color:var(--text);
-  font-size:10px;font-family:'DM Mono',monospace;padding:10px 14px;border-radius:4px;
-  border:1px solid var(--border);white-space:normal;width:280px;line-height:1.7;
-  z-index:999;opacity:0;pointer-events:none;transition:opacity .15s;}
-.score-tip:hover::after{opacity:1;}
+.reasons{font-size:8px;color:var(--muted);margin-top:3px;line-height:1.5;}
+.empty{text-align:center;padding:60px 20px;color:var(--muted);}
+.empty-icon{font-size:32px;margin-bottom:10px;opacity:.3;}
 
-.reasons{font-size:8px;color:var(--muted);margin-top:3px;white-space:normal;max-width:180px;line-height:1.5;}
-.empty{text-align:center;padding:80px;color:var(--muted);}
-.empty-icon{font-size:36px;margin-bottom:12px;opacity:.3;}
-footer{padding:12px 28px;border-top:1px solid var(--border);font-size:10px;color:var(--muted);
-  display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;}
-::-webkit-scrollbar{width:3px;height:3px;}
-::-webkit-scrollbar-track{background:var(--bg);}
-::-webkit-scrollbar-thumb{background:var(--border);}
+footer{padding:10px 16px;border-top:1px solid var(--border);font-size:9px;color:var(--muted);
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;}
 
-/* Chart Modal */
+/* ── CHART MODAL ── */
 #chart-modal{display:none;position:fixed;inset:0;z-index:9000;
-  background:rgba(0,0,0,0.88);backdrop-filter:blur(4px);
-  align-items:center;justify-content:center;}
-.modal-box{background:var(--bg2);border:1px solid var(--border);border-radius:8px;
-  width:94vw;max-width:1050px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;}
+  background:rgba(0,0,0,0.9);align-items:flex-end;justify-content:center;}
+@media(min-width:600px){#chart-modal{align-items:center;}}
+.modal-box{background:var(--bg2);border:1px solid var(--border);
+  width:100%;max-width:1000px;max-height:95vh;overflow:hidden;
+  display:flex;flex-direction:column;
+  border-radius:12px 12px 0 0;}
+@media(min-width:600px){.modal-box{border-radius:8px;width:94vw;max-height:90vh;}}
 .modal-hdr{display:flex;align-items:center;justify-content:space-between;
-  padding:14px 20px;border-bottom:1px solid var(--border);}
-.modal-body{padding:16px 20px;flex:1;overflow:hidden;}
-.modal-ftr{padding:10px 20px;border-top:1px solid var(--border);
-  font-size:10px;color:var(--muted);display:flex;gap:16px;flex-wrap:wrap;}
+  padding:12px 16px;border-bottom:1px solid var(--border);}
+.modal-body{padding:12px 16px;flex:1;overflow:hidden;}
+.modal-ftr{padding:8px 16px;border-top:1px solid var(--border);
+  font-size:9px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap;}
 .close-btn{font-family:'DM Mono',monospace;font-size:11px;background:var(--bg3);
   color:var(--muted);border:1px solid var(--border);padding:6px 14px;border-radius:4px;cursor:pointer;}
+
+::-webkit-scrollbar{width:2px;height:2px;}
+::-webkit-scrollbar-thumb{background:var(--border);}
 </style>
 </head>
 <body>
 
 <header>
-  <div class="logo">MACD<span>Scan</span><sub>4H CROSSOVER SCANNER</sub></div>
+  <div class="logo">MACD<span>Scan</span><sub>4H CROSSOVER</sub></div>
   <div class="hright">
     <div class="status-chip"><div class="pulse"></div><span id="st">READY</span></div>
-    <div class="auto-wrap">
-      <span style="font-size:10px;color:var(--muted);letter-spacing:1px;">AUTO</span>
-      <div id="auto-track" onclick="toggleAuto()"
-        style="position:relative;width:36px;height:20px;background:var(--blue);
-               border-radius:10px;cursor:pointer;transition:.2s;flex-shrink:0;">
-        <div id="auto-thumb"
-          style="position:absolute;top:2px;left:18px;width:16px;height:16px;
-                 background:#fff;border-radius:50%;transition:.2s;"></div>
+    <div class="auto-row">
+      <span class="auto-lbl">AUTO</span>
+      <div class="toggle-track" id="auto-track" onclick="toggleAuto()">
+        <div class="toggle-thumb" id="auto-thumb"></div>
       </div>
-      <select id="auto-interval" onchange="setInterval2(this.value)"
-        style="background:transparent;border:none;color:var(--text);
-               font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;outline:none;">
-        <option value="5">5 min</option>
-        <option value="10">10 min</option>
-        <option value="15" selected>15 min</option>
-        <option value="30">30 min</option>
+      <select class="auto-sel" id="auto-interval" onchange="setInterval2(this.value)">
+        <option value="5">5m</option>
+        <option value="10">10m</option>
+        <option value="15" selected>15m</option>
+        <option value="30">30m</option>
       </select>
     </div>
-    <div class="countdown" id="countdown">NEXT: —</div>
-    <button class="btn btn-primary" id="scanBtn" onclick="manualScan()">⚡ SCAN NOW</button>
+    <div class="countdown" id="countdown">—</div>
+    <button class="btn btn-primary btn-sm" id="scanBtn" onclick="manualScan()">⚡ SCAN</button>
   </div>
 </header>
 
@@ -747,12 +770,12 @@ footer{padding:12px 28px;border-top:1px solid var(--border);font-size:10px;color
 </div>
 
 <div class="stats">
-  <div class="stat" onclick="statFilter('all',this)"><div class="stat-lbl">Signals Found</div><div class="stat-val g" id="s-total">—</div></div>
-  <div class="stat" onclick="statFilter('pullback',this)"><div class="stat-lbl">🎯 Pullback Entry</div><div class="stat-val gold" id="s-pullback">—</div></div>
-  <div class="stat" onclick="statFilter('crossed',this)"><div class="stat-lbl">⚡ Just Crossed</div><div class="stat-val g" id="s-crossed">—</div></div>
+  <div class="stat" onclick="statFilter('all',this)"><div class="stat-lbl">Signals</div><div class="stat-val g" id="s-total">—</div></div>
+  <div class="stat" onclick="statFilter('pullback',this)"><div class="stat-lbl">🎯 Pullback</div><div class="stat-val gold" id="s-pullback">—</div></div>
+  <div class="stat" onclick="statFilter('crossed',this)"><div class="stat-lbl">⚡ Crossed</div><div class="stat-val g" id="s-crossed">—</div></div>
   <div class="stat" onclick="statFilter('watch',this)"><div class="stat-lbl">🔀 Watch</div><div class="stat-val b" id="s-watch">—</div></div>
-  <div class="stat" onclick="statFilter('above_zero',this)"><div class="stat-lbl">☀ Above Zero</div><div class="stat-val g" id="s-zero">—</div></div>
-  <div class="stat" onclick="statFilter('high_score',this)"><div class="stat-lbl">🔥 Score ≥70</div><div class="stat-val gold" id="s-high">—</div></div>
+  <div class="stat" onclick="statFilter('above_zero',this)"><div class="stat-lbl">☀ Zero+</div><div class="stat-val g" id="s-zero">—</div></div>
+  <div class="stat" onclick="statFilter('high_score',this)"><div class="stat-lbl">🔥 Score≥70</div><div class="stat-val gold" id="s-high">—</div></div>
   <div class="stat"><div class="stat-lbl">Last Scan</div><div class="stat-val grey" id="s-time">—</div></div>
 </div>
 
@@ -766,95 +789,94 @@ footer{padding:12px 28px;border-top:1px solid var(--border);font-size:10px;color
     <button class="fc" onclick="setF('sig','crossed',this)">⚡ Crossed</button>
     <button class="fc" onclick="setF('sig','watch',this)">🔀 Watch</button>
   </div>
-  <span class="fl">Zero Line:</span>
+  <span class="fl">Zero:</span>
   <div class="fg" id="fg2">
     <button class="fc on" onclick="setF('zero','all',this)">ALL</button>
-    <button class="fc" onclick="setF('zero','above',this)">Above Zero ☀</button>
-    <button class="fc" onclick="setF('zero','below',this)">Below Zero</button>
+    <button class="fc" onclick="setF('zero','above',this)">☀ Above</button>
   </div>
   <span class="fl">Score:</span>
   <div class="fg" id="fg3">
     <button class="fc on" onclick="setF('score',0,this)">ALL</button>
     <button class="fc" onclick="setF('score',50,this)">50+</button>
-    <button class="fc" onclick="setF('score',70,this)">70+ 🔥</button>
-  </div>
-  <span class="fl">Sort:</span>
-  <div class="fg" id="fg4">
-    <button class="fc on" onclick="setF('sort','signal',this)">SIGNAL ▼</button>
-    <button class="fc" onclick="setF('sort','score',this)">SCORE</button>
-    <button class="fc" onclick="setF('sort','pullback',this)">PULLBACK%</button>
-    <button class="fc" onclick="setF('sort','vol',this)">VOLUME</button>
+    <button class="fc" onclick="setF('score',70,this)">70+🔥</button>
   </div>
 </div>
 
 <div class="tw">
-  <div class="ttl">MACD SIGNALS — 4H <span class="rc" id="rc"></span>
-    <span style="font-size:9px;color:var(--muted);font-weight:400;letter-spacing:1px;">← scroll →</span>
+  <div class="ttl">MACD SIGNALS <span class="rc" id="rc"></span></div>
+
+  <!-- Mobile Cards -->
+  <div class="cards" id="cards">
+    <div class="empty"><div class="empty-icon">📈</div><div>Tap SCAN to find MACD signals</div></div>
   </div>
-  <table>
-    <thead>
-      <tr>
-        <th>#</th><th>PAIR</th><th>PRICE</th>
-        <th>4H%</th><th>24H%</th>
-        <th>SIGNAL</th>
-        <th>HISTOGRAM</th><th>ZERO</th>
-        <th>CROSS</th><th>PULLBACK%</th>
-        <th>RSI</th><th>MA50</th><th>VOL</th>
-        <th>SCORE</th><th>TAGS</th>
-      </tr>
-    </thead>
-    <tbody id="tb">
-      <tr><td colspan="15">
-        <div class="empty"><div class="empty-icon">📈</div>
-        <div>Click SCAN NOW — Scans 300 pairs for MACD crossovers on 4H</div></div>
-      </td></tr>
-    </tbody>
-  </table>
+
+  <!-- Desktop Table -->
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th><th>PAIR</th><th>PRICE</th>
+          <th>4H%</th><th>24H%</th>
+          <th>SIGNAL</th>
+          <th>HIST</th><th>ZERO</th>
+          <th>CROSS</th><th>PULLBACK</th>
+          <th>RSI</th><th>MA50</th><th>VOL</th>
+          <th>SCORE</th><th>TAGS</th>
+        </tr>
+      </thead>
+      <tbody id="tb">
+        <tr><td colspan="15">
+          <div class="empty"><div class="empty-icon">📈</div>
+          <div>Click SCAN — 4H MACD crossover detection</div></div>
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <footer>
-  <span>MACDScan · 4H MACD(12,26,9) · Pullback Entry · Just Crossed · Watch · Pure Technical</span>
+  <span>MACDScan · 4H MACD(12,26,9) · Pullback · Crossed · Watch</span>
   <span id="ft"></span>
 </footer>
 
 <!-- Chart Modal -->
-<div id="chart-modal" style="display:none;position:fixed;inset:0;z-index:9000;
-  background:rgba(0,0,0,0.88);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
+<div id="chart-modal">
   <div class="modal-box">
     <div class="modal-hdr">
       <div>
-        <span id="chart-title" style="font-family:'Outfit',sans-serif;font-weight:700;font-size:18px;"></span>
-        <span id="chart-sig" style="margin-left:12px;font-size:11px;color:var(--muted);"></span>
+        <span id="chart-title" style="font-family:'Outfit',sans-serif;font-weight:700;font-size:16px;"></span>
+        <span id="chart-sig" style="margin-left:10px;font-size:10px;color:var(--muted);"></span>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <span id="chart-price" style="font-family:'Outfit',sans-serif;font-weight:700;font-size:16px;color:var(--green);"></span>
-        <button class="close-btn" onclick="closeChart()">✕ CLOSE</button>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span id="chart-price" style="font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;color:var(--green);"></span>
+        <button class="close-btn" onclick="closeChart()">✕</button>
       </div>
     </div>
     <div class="modal-body">
-      <canvas id="price-canvas" style="width:100%;display:block;margin-bottom:8px;"></canvas>
+      <canvas id="price-canvas" style="width:100%;display:block;margin-bottom:6px;"></canvas>
       <canvas id="macd-canvas"  style="width:100%;display:block;"></canvas>
     </div>
     <div class="modal-ftr">
-      <span><span style="color:var(--blue)">—</span> MACD Line</span>
-      <span><span style="color:var(--gold)">—</span> Signal Line</span>
-      <span><span style="color:var(--green)">■</span> Positive Histogram</span>
-      <span><span style="color:var(--red)">■</span> Negative Histogram</span>
-      <span><span style="color:var(--muted)">- -</span> Zero Line</span>
+      <span><span style="color:var(--blue)">—</span> MACD</span>
+      <span><span style="color:var(--gold)">—</span> Signal</span>
+      <span><span style="color:var(--green)">■</span> Positive</span>
+      <span><span style="color:var(--red)">■</span> Negative</span>
     </div>
   </div>
 </div>
 
 <script>
-let coins=[], filt={sig:'all',zero:'all',score:0,sort:'signal'}, sortDesc=true;
+let coins=[], filt={sig:'all',zero:'all',score:0}, sortDesc=true;
 let scanPoll=null, autoOn=true;
 
 // ── Auto Scan ─────────────────────────────────────────────────────────────
 function toggleAuto(){
   autoOn=!autoOn;
-  document.getElementById('auto-track').style.background=autoOn?'var(--blue)':'var(--border)';
-  document.getElementById('auto-thumb').style.left=autoOn?'18px':'2px';
-  document.getElementById('auto-thumb').style.background=autoOn?'#fff':'var(--muted)';
+  const tr=document.getElementById('auto-track');
+  const th=document.getElementById('auto-thumb');
+  tr.style.background=autoOn?'var(--blue)':'var(--border)';
+  th.style.left=autoOn?'15px':'2px';
+  th.style.background=autoOn?'#fff':'var(--muted)';
   fetch('/api/autoscan/config',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({enabled:autoOn,interval:parseInt(document.getElementById('auto-interval').value)||15})});
 }
@@ -864,10 +886,10 @@ function setInterval2(v){
 }
 function updateCountdown(s){
   const el=document.getElementById('countdown');
-  if(!autoOn){el.textContent='AUTO: OFF';el.style.color='var(--muted)';return;}
-  if(s<=0){el.textContent='SCANNING...';el.style.color='var(--blue)';return;}
+  if(!autoOn){el.textContent='OFF';el.style.color='var(--muted)';return;}
+  if(s<=0){el.textContent='…';el.style.color='var(--blue)';return;}
   const m=Math.floor(s/60),sec=s%60;
-  el.textContent=`NEXT: ${m}:${sec.toString().padStart(2,'0')}`;
+  el.textContent=m+':'+sec.toString().padStart(2,'0');
   el.style.color=s<60?'var(--blue)':'var(--muted)';
 }
 
@@ -875,26 +897,24 @@ function updateCountdown(s){
 function manualScan(){
   if(scanPoll) return;
   startPolling();
-  fetch('/api/scan',{method:'POST'}).then(r=>r.json()).then(d=>{
-    console.log('Scan started:', d.status);
-  }).catch(e=>{ console.error('Scan error:', e); });
+  fetch('/api/scan',{method:'POST'}).catch(()=>{});
 }
 function startPolling(){
   if(scanPoll) return;
   document.getElementById('scanBtn').disabled=true;
-  document.getElementById('scanBtn').textContent='⏳ SCANNING...';
+  document.getElementById('scanBtn').textContent='⏳';
   document.getElementById('prog-wrap').style.display='block';
   document.getElementById('prog-fill').style.width='0%';
   document.getElementById('prog-fill').classList.add('ind');
-  document.getElementById('prog-label').textContent='Connecting to Binance...';
+  document.getElementById('prog-label').textContent='Connecting...';
   document.getElementById('prog-label').style.color='';
   document.getElementById('alert-box').style.display='none';
-  scanPoll=setInterval(pollStatus,1000);
+  scanPoll=setInterval(pollStatus,1500);
 }
 function stopPolling(){
   clearInterval(scanPoll); scanPoll=null;
   document.getElementById('scanBtn').disabled=false;
-  document.getElementById('scanBtn').textContent='⚡ SCAN NOW';
+  document.getElementById('scanBtn').textContent='⚡ SCAN';
   setTimeout(()=>{
     document.getElementById('prog-wrap').style.display='none';
     document.getElementById('prog-fill').style.width='0%';
@@ -904,7 +924,7 @@ function stopPolling(){
 function pollStatus(){
   fetch('/api/status').then(r=>r.json()).then(d=>{
     const pl=document.getElementById('prog-label');
-    pl.textContent=d.error?'✗ '+(d.error||'').slice(0,100):(d.progress||'');
+    pl.textContent=d.error?'✗ '+(d.error||'').slice(0,80):(d.progress||'');
     pl.style.color=d.error?'var(--red)':'';
     document.getElementById('st').textContent=d.scanning?'SCANNING':'LIVE';
     if(d.progress_pct>0){
@@ -912,7 +932,7 @@ function pollStatus(){
       document.getElementById('prog-fill').style.width=d.progress_pct+'%';
     }
     updateCountdown(d.next_scan_in||0);
-    if(!d.scanning&&d.coins&&d.coins.length>0){
+    if(!d.scanning&&d.coins&&d.coins.length>=0&&d.last_scan){
       stopPolling(); coins=d.coins;
       updateStats(d.stats,d.last_scan);
       showAlert(d.coins); render();
@@ -920,12 +940,13 @@ function pollStatus(){
     if(d.error&&!d.scanning) stopPolling();
   }).catch(()=>{});
 }
+// Background 5s check
 setInterval(()=>{
   if(scanPoll) return;
   fetch('/api/status').then(r=>r.json()).then(d=>{
     updateCountdown(d.next_scan_in||0);
     if(d.scanning){startPolling();return;}
-    if(d.last_scan&&d.coins&&d.coins.length>0){
+    if(d.last_scan&&d.coins){
       const nt=d.last_scan.slice(11),ct=document.getElementById('s-time').textContent;
       if(nt!==ct){coins=d.coins;updateStats(d.stats,d.last_scan);showAlert(d.coins);render();}
     }
@@ -934,154 +955,166 @@ setInterval(()=>{
 
 function updateStats(st,ls){
   if(!st) return;
-  document.getElementById('s-total').textContent=st.total;
-  document.getElementById('s-pullback').textContent=st.pullbacks;
-  document.getElementById('s-crossed').textContent=st.crossed;
-  document.getElementById('s-watch').textContent=st.watching;
-  document.getElementById('s-zero').textContent=st.above_zero;
-  document.getElementById('s-high').textContent=st.high_score;
+  document.getElementById('s-total').textContent=st.total||0;
+  document.getElementById('s-pullback').textContent=st.pullbacks||0;
+  document.getElementById('s-crossed').textContent=st.crossed||0;
+  document.getElementById('s-watch').textContent=st.watching||0;
+  document.getElementById('s-zero').textContent=st.above_zero||0;
+  document.getElementById('s-high').textContent=st.high_score||0;
   document.getElementById('s-time').textContent=ls?ls.slice(11):'—';
-  document.getElementById('ft').textContent='Last scan: '+(ls||'—');
+  document.getElementById('ft').textContent='Last: '+(ls||'—');
 }
 function showAlert(ca){
   const hot=ca.filter(c=>c.signal_type==='PULLBACK ENTRY'&&c.score>=65);
   const ab=document.getElementById('alert-box');
-  if(hot.length){
-    ab.style.display='block';
-    ab.innerHTML='🎯 <strong>'+hot.length+' PULLBACK ENTRY'+(hot.length>1?'S':'')+' DETECTED:</strong> '
-      +hot.slice(0,8).map(c=>
-        `<a href="https://www.binance.com/en/futures/${c.symbol}" target="_blank"
-           onclick="event.stopPropagation()"
-           style="color:var(--gold);text-decoration:none;font-weight:700;
-                  background:rgba(240,180,41,0.1);border:1px solid rgba(240,180,41,0.3);
-                  padding:2px 8px;border-radius:3px;margin:0 2px;display:inline-block;"
-           onmouseover="this.style.background='rgba(240,180,41,0.25)'"
-           onmouseout="this.style.background='rgba(240,180,41,0.1)'"
-         >${c.base} <span style="font-size:9px;color:var(--green)">${c.pullback_pct?.toFixed(1)}%↓</span></a>`
-      ).join(' ');
-  } else ab.style.display='none';
+  if(!hot.length){ab.style.display='none';return;}
+  ab.style.display='block';
+  ab.innerHTML='🎯 <strong>'+hot.length+' PULLBACK'+(hot.length>1?'S':'')+' DETECTED:</strong> '
+    +hot.slice(0,6).map(c=>
+      `<a href="https://www.binance.com/en/futures/${c.symbol}" target="_blank"
+         style="color:var(--gold);text-decoration:none;font-weight:700;
+                background:rgba(240,180,41,0.1);border:1px solid rgba(240,180,41,0.3);
+                padding:1px 6px;border-radius:3px;margin:0 2px;display:inline-block;"
+       >${c.base} ${c.pullback_pct?.toFixed(1)}%↓</a>`
+    ).join(' ');
 }
 
 // ── Render ────────────────────────────────────────────────────────────────
-function render(){
+function getFiltered(){
   let data=[...coins];
-  if(filt.sig==='pullback')    data=data.filter(c=>c.signal_type==='PULLBACK ENTRY');
-  if(filt.sig==='crossed')     data=data.filter(c=>c.signal_type==='JUST CROSSED');
-  if(filt.sig==='watch')       data=data.filter(c=>c.signal_type==='WATCH');
-  if(filt.zero==='above')      data=data.filter(c=>c.macd_above_zero);
-  if(filt.zero==='below')      data=data.filter(c=>!c.macd_above_zero);
-  if(filt.score>0)             data=data.filter(c=>c.score>=filt.score);
-
+  if(filt.sig==='pullback')  data=data.filter(c=>c.signal_type==='PULLBACK ENTRY');
+  if(filt.sig==='crossed')   data=data.filter(c=>c.signal_type==='JUST CROSSED');
+  if(filt.sig==='watch')     data=data.filter(c=>c.signal_type==='WATCH');
+  if(filt.zero==='above')    data=data.filter(c=>c.macd_above_zero);
+  if(filt.score>0)           data=data.filter(c=>c.score>=filt.score);
   data.sort((a,b)=>{
-    if(filt.sort==='signal'){
-      const order={PULLBACK_ENTRY:0,'JUST CROSSED':1,WATCH:2};
-      const ao=order[a.signal_type?.replace(' ','_')]??3;
-      const bo=order[b.signal_type?.replace(' ','_')]??3;
-      if(ao!==bo) return ao-bo;
-      return b.score-a.score;
-    }
-    const av=filt.sort==='score'?a.score:filt.sort==='pullback'?(a.pullback_pct||0):filt.sort==='vol'?(a.vol24_m||0):a.score;
-    const bv=filt.sort==='score'?b.score:filt.sort==='pullback'?(b.pullback_pct||0):filt.sort==='vol'?(b.vol24_m||0):b.score;
-    return sortDesc?bv-av:av-bv;
+    const order={'PULLBACK ENTRY':0,'JUST CROSSED':1,'WATCH':2};
+    const ao=order[a.signal_type]??3, bo=order[b.signal_type]??3;
+    return ao!==bo?ao-bo:b.score-a.score;
   });
+  return data;
+}
 
-  document.getElementById('rc').textContent=data.length+' SIGNALS';
+function render(){
+  const data=getFiltered();
+  document.getElementById('rc').textContent=data.length+' signals';
+  renderCards(data);
+  renderTable(data);
+}
+
+const fmt=p=>p==null?'—':p<0.00001?p.toFixed(8):p<0.001?p.toFixed(6):p<0.1?p.toFixed(5):p<1?p.toFixed(4):p<10?p.toFixed(3):p<1000?p.toFixed(2):p.toFixed(0);
+const pct=v=>v==null?'—':`<span style="color:${Math.abs(v)<0.3?'var(--muted)':v>0?'var(--green)':'var(--red)'}">${v>0?'+':''}${v.toFixed(2)}%</span>`;
+const rsiC=v=>v==null?'var(--muted)':v<35?'var(--gold)':v<50?'var(--green)':v<65?'var(--text)':v<75?'var(--blue)':'var(--red)';
+const sc=s=>s>=70?'s-hot':s>=50?'s-good':s>=35?'s-watch':'s-low';
+const sigBadge=t=>t==='PULLBACK ENTRY'?'<span class="sig-badge sig-pullback">🎯 PULLBACK</span>':
+                   t==='JUST CROSSED'?'<span class="sig-badge sig-crossed">⚡ CROSSED</span>':
+                   '<span class="sig-badge sig-watch">🔀 WATCH</span>';
+const tags=c=>[
+  c.macd_above_zero?'<span class="tag t-green">☀ ZERO+</span>':'',
+  c.hist_growing?'<span class="tag t-green">HIST↑</span>':'',
+  c.vol_confirm?'<span class="tag t-blue">VOL✓</span>':'',
+  c.above_ma50?'<span class="tag t-green">MA50↑</span>':'',
+  c.pullback_valid?'<span class="tag t-gold">PULLBACK</span>':'',
+  c.hist_recovering?'<span class="tag t-blue">RECOVERING</span>':'',
+  (c.rsi14&&c.rsi14>70)?'<span class="tag t-red">RSI OB</span>':'',
+].filter(Boolean).join('');
+
+function renderCards(data){
+  const el=document.getElementById('cards');
   if(!data.length){
-    document.getElementById('tb').innerHTML='<tr><td colspan="15"><div class="empty"><div class="empty-icon">🔍</div><div>No signals match filters</div></div></td></tr>';
+    el.innerHTML='<div class="empty"><div class="empty-icon">🔍</div><div>No signals match filters</div></div>';
     return;
   }
+  el.innerHTML=data.slice(0,80).map((c,i)=>`
+    <div class="card" onclick="openChart('${c.symbol}','${c.signal_type||''}')">
+      <div class="card-top">
+        <div>
+          <div class="card-pair">${c.base}/USDT</div>
+          <div class="card-vol">$${c.vol24_m}M · ${sigBadge(c.signal_type)}</div>
+        </div>
+        <div class="card-score">
+          <span class="score ${sc(c.score)}">${c.score}</span>
+          ${c.macd_above_zero?'<span style="font-size:9px;color:var(--green)">☀ Above Zero</span>':'<span style="font-size:9px;color:var(--muted)">☁ Below Zero</span>'}
+        </div>
+      </div>
+      <div class="card-mid">
+        <div class="card-cell">
+          <div class="card-cell-lbl">Price</div>
+          <div class="card-cell-val">${fmt(c.price)}</div>
+        </div>
+        <div class="card-cell">
+          <div class="card-cell-lbl">4H%</div>
+          <div class="card-cell-val">${pct(c.chg_4h)}</div>
+        </div>
+        <div class="card-cell">
+          <div class="card-cell-lbl">${c.pullback_pct?'Pullback':'RSI'}</div>
+          <div class="card-cell-val" style="color:${c.pullback_pct?'var(--gold)':rsiC(c.rsi14)}">
+            ${c.pullback_pct?c.pullback_pct.toFixed(1)+'%↓':(c.rsi14?c.rsi14.toFixed(1):'—')}
+          </div>
+        </div>
+        <div class="card-cell">
+          <div class="card-cell-lbl">Cross</div>
+          <div class="card-cell-val" style="color:${(c.cross_bar||99)<=2?'var(--green)':(c.cross_bar||99)<=5?'var(--gold)':'var(--muted)'}">
+            ${c.cross_bar?c.cross_bar+'bars':'—'}
+          </div>
+        </div>
+        <div class="card-cell">
+          <div class="card-cell-lbl">Histogram</div>
+          <div class="card-cell-val" style="color:${(c.histogram||0)>0?'var(--green)':'var(--red)'}">
+            ${c.hist_growing?'▲':c.histogram>c.hist_prev?'↑':'↓'}
+          </div>
+        </div>
+        <div class="card-cell">
+          <div class="card-cell-lbl">Vol</div>
+          <div class="card-cell-val" style="color:${c.vol_confirm?'var(--green)':'var(--muted)'}">
+            ${c.rel_vol?c.rel_vol.toFixed(1)+'x':'—'}
+          </div>
+        </div>
+      </div>
+      <div class="card-bottom">
+        <div class="card-reasons">${(c.reasons||[]).filter(r=>!r.startsWith('⚠')).slice(0,2).join(' · ')}</div>
+        <div class="card-tags">${tags(c)}</div>
+      </div>
+    </div>`).join('');
+}
 
-  const fmt=p=>p==null?'—':p<0.00001?p.toFixed(8):p<0.001?p.toFixed(6):p<0.1?p.toFixed(5):p<1?p.toFixed(4):p<10?p.toFixed(3):p<1000?p.toFixed(2):p.toFixed(0);
-  const fmtM=p=>p==null?'—':p<0.00001?p.toFixed(8):p<0.001?p.toFixed(6):p<0.1?p.toFixed(5):p<1?p.toFixed(5):p<10?p.toFixed(4):p<1000?p.toFixed(3):p.toFixed(0);
-  const pct=v=>v==null?'<span style="color:var(--muted)">—</span>':
-    `<span style="color:${Math.abs(v)<0.3?'var(--muted)':v>0?'var(--green)':'var(--red)'}">${v>0?'+':''}${v.toFixed(2)}%</span>`;
-  const rsiC=v=>v==null?'var(--muted)':v<35?'var(--gold)':v<50?'var(--green)':v<65?'var(--text)':v<75?'var(--blue)':'var(--red)';
-
-  document.getElementById('tb').innerHTML=data.slice(0,100).map((c,i)=>{
-    const sc=c.score>=70?'s-hot':c.score>=50?'s-good':c.score>=35?'s-watch':'s-low';
-
-    const sigBadge=
-      c.signal_type==='PULLBACK ENTRY'?'<span class="sig-badge sig-pullback">🎯 PULLBACK ENTRY</span>':
-      c.signal_type==='JUST CROSSED'  ?'<span class="sig-badge sig-crossed">⚡ JUST CROSSED</span>':
-                                        '<span class="sig-badge sig-watch">🔀 WATCH</span>';
-
-    const macdColor=c.macd>0?'var(--green)':'var(--red)';
-    const histColor=c.histogram>0?'var(--green)':'var(--red)';
-    const histTrend=c.hist_growing?'▲':c.histogram>c.hist_prev?'↑':'—';
-
-    const zeroBadge=c.macd_above_zero
-      ?'<span style="color:var(--green);font-size:10px">☀ ABOVE</span>'
-      :'<span style="color:var(--muted);font-size:10px">☁ BELOW</span>';
-
-    const crossCell=c.cross_bar
-      ?`<span style="color:${c.cross_bar<=2?'var(--green)':c.cross_bar<=5?'var(--gold)':'var(--muted)'};">${c.cross_bar}H ago</span>`
-      :'<span style="color:var(--muted)">—</span>';
-
-    const pullbackCell=c.pullback_pct
-      ?`<span style="color:${c.pullback_pct<=4?'var(--gold)':'var(--muted)'}">${c.pullback_pct.toFixed(1)}%</span>`
-      :'<span style="color:var(--muted)">—</span>';
-
-    const ma50Cell=c.ma50
-      ?`<span style="color:${c.above_ma50?'var(--green)':'var(--red)'}">${c.above_ma50?'↑ Above':'↓ Below'}</span>`
-      :'—';
-
-    const rv=c.rel_vol!=null
-      ?`<span style="color:${c.rel_vol>=1.5?'var(--green)':c.rel_vol>=1.2?'var(--gold)':'var(--muted)'}">${c.rel_vol.toFixed(2)}x</span>`
-      :'—';
-
-    const tags=[
-      c.macd_above_zero    ?'<span class="tag t-green" data-tip="MACD line above zero — strong bullish territory">☀ ABOVE ZERO</span>':'',
-      c.hist_growing       ?'<span class="tag t-green" data-tip="Histogram bars growing — momentum accelerating">📊 HIST↑</span>':'',
-      c.vol_confirm        ?'<span class="tag t-blue" data-tip="Volume above 1.2x average — institutions participating">🔊 VOL OK</span>':'',
-      c.above_ma50         ?'<span class="tag t-green" data-tip="Price above MA50 — trend aligned with signal">MA50↑</span>':'',
-      c.pullback_valid     ?'<span class="tag t-gold" data-tip="Price pulled back 1.5-7% after MACD cross — ideal entry zone">🎯 PULLBACK</span>':'',
-      c.hist_recovering    ?'<span class="tag t-blue" data-tip="Histogram recovering from lows — momentum turning bullish">📈 RECOVERING</span>':'',
-      (c.rsi14&&c.rsi14>70)?'<span class="tag t-red" data-tip="RSI overbought — wait for pullback">⚠ RSI OB</span>':'',
-    ].filter(Boolean).join('');
-
-    const tipText=(c.reasons||[]).filter(r=>!r.startsWith('⚠')).join(' | ');
-
-    return `<tr onclick="openChart('${c.symbol}','${c.signal_type||''}')">
+function renderTable(data){
+  const el=document.getElementById('tb');
+  if(!data.length){
+    el.innerHTML='<tr><td colspan="15"><div class="empty"><div class="empty-icon">🔍</div><div>No signals</div></div></td></tr>';
+    return;
+  }
+  el.innerHTML=data.slice(0,100).map((c,i)=>`
+    <tr onclick="openChart('${c.symbol}','${c.signal_type||''}')">
       <td style="color:var(--muted);font-size:10px">${i+1}</td>
-      <td><div class="pname">${c.base}/USDT</div><div class="psub">PERP · $${c.vol24_m}M</div></td>
+      <td><div class="pname">${c.base}/USDT</div><div class="psub">$${c.vol24_m}M</div></td>
       <td>${fmt(c.price)}</td>
       <td>${pct(c.chg_4h)}</td>
       <td>${pct(c.chg_24h)}</td>
-      <td>${sigBadge}</td>
-      <td style="color:${histColor};font-size:10px">${fmtM(c.histogram)} ${histTrend}</td>
-      <td>${zeroBadge}</td>
-      <td>${crossCell}</td>
-      <td>${pullbackCell}</td>
+      <td>${sigBadge(c.signal_type)}</td>
+      <td style="color:${(c.histogram||0)>0?'var(--green)':'var(--red)';font-size:10px}">${c.hist_growing?'▲':c.histogram>c.hist_prev?'↑':'↓'}</td>
+      <td>${c.macd_above_zero?'<span style="color:var(--green)">☀</span>':'<span style="color:var(--muted)">☁</span>'}</td>
+      <td style="color:${(c.cross_bar||99)<=2?'var(--green)':(c.cross_bar||99)<=5?'var(--gold)':'var(--muted)'}">${c.cross_bar?c.cross_bar+'b':'—'}</td>
+      <td style="color:${c.pullback_pct&&c.pullback_pct<=4?'var(--gold)':'var(--muted)'}">${c.pullback_pct?c.pullback_pct.toFixed(1)+'%':'—'}</td>
       <td><span style="color:${rsiC(c.rsi14)}">${c.rsi14!=null?c.rsi14.toFixed(1):'—'}</span></td>
-      <td>${ma50Cell}</td>
-      <td>${rv}</td>
-      <td><span class="score ${sc} score-tip" data-tip="${tipText}">${c.score}</span>
-          <div class="reasons">${(c.reasons||[]).filter(r=>!r.startsWith('⚠')).slice(0,2).join(' · ')}</div></td>
-      <td>${tags||'<span style="color:var(--muted);font-size:9px">—</span>'}</td>
-    </tr>`;
-  }).join('');
+      <td style="color:${c.above_ma50?'var(--green)':'var(--red)'}">${c.above_ma50?'↑':'↓'}</td>
+      <td style="color:${c.vol_confirm?'var(--green)':'var(--muted)'}">${c.rel_vol?c.rel_vol.toFixed(1)+'x':'—'}</td>
+      <td><span class="score ${sc(c.score)}">${c.score}</span></td>
+      <td>${tags(c)||'—'}</td>
+    </tr>`).join('');
 }
 
 // ── Filters ───────────────────────────────────────────────────────────────
 function setF(type,val,el){
-  if(type==='sort'){
-    if(filt.sort===val) sortDesc=!sortDesc; else{filt.sort=val;sortDesc=true;}
-    document.getElementById('fg4').querySelectorAll('.fc').forEach(c=>{
-      c.classList.remove('on');c.textContent=c.textContent.replace(' ▼','').replace(' ▲','');
-    });
-    el.classList.add('on');
-    el.textContent=el.textContent.trim()+(sortDesc?' ▼':' ▲');
-  } else {
-    filt[type]=val;
-    const g={sig:'fg1',zero:'fg2',score:'fg3'}[type];
-    if(g){document.getElementById(g).querySelectorAll('.fc').forEach(c=>c.classList.remove('on'));el.classList.add('on');}
-  }
+  filt[type]=val;
+  const g={sig:'fg1',zero:'fg2',score:'fg3'}[type];
+  if(g){document.getElementById(g).querySelectorAll('.fc').forEach(c=>c.classList.remove('on'));el.classList.add('on');}
   if(coins.length) render();
 }
 function statFilter(type,el){
   document.querySelectorAll('.stat').forEach(s=>s.classList.remove('active'));
   if(type!=='all') el.classList.add('active');
-  filt.sig='all'; filt.zero='all'; filt.score=0;
+  filt={sig:'all',zero:'all',score:0};
   if(type==='pullback') filt.sig='pullback';
   else if(type==='crossed') filt.sig='crossed';
   else if(type==='watch') filt.sig='watch';
@@ -1091,76 +1124,63 @@ function statFilter(type,el){
 }
 
 // ── Chart ─────────────────────────────────────────────────────────────────
-function openChart(sym, sigType){
+function openChart(sym,sigType){
   document.getElementById('chart-modal').style.display='flex';
   document.getElementById('chart-title').textContent=sym.replace('USDT','/USDT');
   document.getElementById('chart-sig').textContent=sigType;
-  document.getElementById('chart-price').textContent='Loading...';
+  document.getElementById('chart-price').textContent='...';
   fetch('/api/chart/'+sym).then(r=>r.json()).then(d=>{
     if(d.error){document.getElementById('chart-price').textContent='Error';return;}
     document.getElementById('chart-price').textContent=d.result?.price||'';
-    drawPriceChart(d);
-    drawMACDChart(d);
+    drawPriceChart(d); drawMACDChart(d);
   }).catch(()=>{});
 }
-function closeChart(){
-  document.getElementById('chart-modal').style.display='none';
-}
+function closeChart(){document.getElementById('chart-modal').style.display='none';}
 document.getElementById('chart-modal').addEventListener('click',function(e){if(e.target===this)closeChart();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeChart();});
 
 function drawPriceChart(d){
   const canvas=document.getElementById('price-canvas');
-  const W=canvas.parentElement.offsetWidth-40;
-  const H=180; canvas.width=W; canvas.height=H;
+  const W=canvas.parentElement.offsetWidth-32;
+  const H=Math.min(160,window.innerHeight*0.25);
+  canvas.width=W;canvas.height=H;
   const ctx=canvas.getContext('2d');
   ctx.clearRect(0,0,W,H);
-
-  const ohlc=d.ohlc||[];
-  if(!ohlc.length) return;
-  const data=ohlc.slice(-60);
-  const n=data.length;
-  const pad={l:8,r:60,t:10,b:20};
-  const cW=W-pad.l-pad.r, cH=H-pad.t-pad.b;
-
-  let minP=Math.min(...data.map(c=>c.l));
-  let maxP=Math.max(...data.map(c=>c.h));
+  const ohlc=d.ohlc||[];if(!ohlc.length)return;
+  const data=ohlc.slice(-60);const n=data.length;
+  const pad={l:4,r:55,t:8,b:16};
+  const cW=W-pad.l-pad.r,cH=H-pad.t-pad.b;
+  let minP=Math.min(...data.map(c=>c.l)),maxP=Math.max(...data.map(c=>c.h));
   const range=maxP-minP||1;
   const xS=i=>pad.l+(i/(n-1))*cW;
   const yS=p=>pad.t+(1-(p-minP)/range)*cH;
-
   // Grid
-  ctx.strokeStyle='rgba(26,31,48,0.8)'; ctx.lineWidth=1;
-  for(let i=0;i<=3;i++){
-    const y=pad.t+(i/3)*cH;
+  ctx.strokeStyle='rgba(24,29,42,0.8)';ctx.lineWidth=1;
+  for(let i=0;i<=2;i++){
+    const y=pad.t+(i/2)*cH;
     ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
-    const pr=maxP-(i/3)*range;
-    ctx.fillStyle='#4a5578';ctx.font='9px DM Mono,monospace';ctx.textAlign='left';
-    ctx.fillText(pr<1?pr.toFixed(5):pr.toFixed(2),W-pad.r+4,y+3);
+    const pr=maxP-(i/2)*range;
+    ctx.fillStyle='#4a5578';ctx.font='8px DM Mono,monospace';ctx.textAlign='left';
+    ctx.fillText(pr<1?pr.toFixed(4):pr.toFixed(2),W-pad.r+3,y+3);
   }
-
-  // MA50 line
-  if(d.result?.ma50){
-    const y=yS(d.result.ma50);
-    ctx.strokeStyle='rgba(77,159,255,0.5)';ctx.lineWidth=1;ctx.setLineDash([4,3]);
-    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle='rgba(77,159,255,0.8)';ctx.font='8px DM Mono,monospace';ctx.textAlign='left';
-    ctx.fillText('MA50',W-pad.r+4,y-2);
-  }
-
-  // Mark cross bar
+  // Cross marker
   const cb=d.result?.cross_bar;
   if(cb&&cb<n){
     const xi=xS(n-1-cb);
-    ctx.fillStyle='rgba(0,229,160,0.1)';
-    ctx.fillRect(xi-6,pad.t,12,cH);
+    ctx.fillStyle='rgba(0,229,160,0.08)';
+    ctx.fillRect(xi-5,pad.t,10,cH);
     ctx.fillStyle='rgba(0,229,160,0.8)';ctx.font='8px DM Mono,monospace';ctx.textAlign='center';
-    ctx.fillText('X',xi,pad.t+10);
+    ctx.fillText('X',xi,pad.t+9);
   }
-
+  // MA50
+  if(d.result?.ma50){
+    const y=yS(d.result.ma50);
+    ctx.strokeStyle='rgba(77,159,255,0.4)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+    ctx.setLineDash([]);
+  }
   // Candles
-  const bW=Math.max(1,cW/n*0.7);
+  const bW=Math.max(1,cW/n*0.65);
   data.forEach((c,i)=>{
     const x=xS(i),op=yS(c.o),cl=yS(c.c),hi=yS(c.h),lo=yS(c.l);
     const bull=c.c>=c.o;
@@ -1169,91 +1189,73 @@ function drawPriceChart(d){
     ctx.fillStyle=bull?'rgba(0,229,160,0.85)':'rgba(255,77,109,0.85)';
     ctx.fillRect(x-bW/2,Math.min(op,cl),bW,Math.max(1,Math.abs(cl-op)));
   });
-
-  // Current price line
+  // Current price
   const cy=yS(d.result?.price||data[data.length-1].c);
-  ctx.strokeStyle='rgba(255,255,255,0.4)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+  ctx.strokeStyle='rgba(255,255,255,0.3)';ctx.lineWidth=1;ctx.setLineDash([2,3]);
   ctx.beginPath();ctx.moveTo(pad.l,cy);ctx.lineTo(W-pad.r,cy);ctx.stroke();
   ctx.setLineDash([]);
 }
 
 function drawMACDChart(d){
   const canvas=document.getElementById('macd-canvas');
-  const W=canvas.parentElement.offsetWidth-40;
-  const H=120; canvas.width=W; canvas.height=H;
+  const W=canvas.parentElement.offsetWidth-32;
+  const H=Math.min(100,window.innerHeight*0.15);
+  canvas.width=W;canvas.height=H;
   const ctx=canvas.getContext('2d');
   ctx.clearRect(0,0,W,H);
-  if(!d.result) return;
-
-  const macdS =d.result.macd_series||[];
-  const sigS  =d.result.signal_series||[];
-  const histS =d.result.hist_series||[];
-  if(!macdS.length) return;
-
+  if(!d.result)return;
+  const macdS=d.result.macd_series||[];
+  const sigS=d.result.signal_series||[];
+  const histS=d.result.hist_series||[];
+  if(!macdS.length)return;
   const n=macdS.length;
-  const pad={l:8,r:60,t:8,b:20};
-  const cW=W-pad.l-pad.r, cH=H-pad.t-pad.b;
-
-  const allVals=[...macdS,...sigS,...histS];
-  let minV=Math.min(...allVals), maxV=Math.max(...allVals);
+  const pad={l:4,r:55,t:6,b:14};
+  const cW=W-pad.l-pad.r,cH=H-pad.t-pad.b;
+  const allV=[...macdS,...sigS,...histS];
+  let minV=Math.min(...allV),maxV=Math.max(...allV);
   const range=(maxV-minV)||1;
   const xS=i=>pad.l+(i/(n-1))*cW;
   const yS=v=>pad.t+(1-(v-minV)/range)*cH;
-
   // Zero line
   const zy=yS(0);
-  ctx.strokeStyle='rgba(74,85,120,0.6)';ctx.lineWidth=1;ctx.setLineDash([4,3]);
+  ctx.strokeStyle='rgba(74,85,120,0.5)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
   ctx.beginPath();ctx.moveTo(pad.l,zy);ctx.lineTo(W-pad.r,zy);ctx.stroke();
   ctx.setLineDash([]);
-  ctx.fillStyle='rgba(74,85,120,0.7)';ctx.font='8px DM Mono,monospace';ctx.textAlign='left';
-  ctx.fillText('0',W-pad.r+4,zy+3);
-
+  ctx.fillStyle='rgba(74,85,120,0.6)';ctx.font='8px DM Mono,monospace';ctx.textAlign='left';
+  ctx.fillText('0',W-pad.r+3,zy+3);
   // Histogram
   const bW=Math.max(1,cW/n*0.6);
   histS.forEach((v,i)=>{
     const x=xS(i),y=yS(v),z=yS(0);
-    ctx.fillStyle=v>=0?'rgba(0,229,160,0.6)':'rgba(255,77,109,0.6)';
+    ctx.fillStyle=v>=0?'rgba(0,229,160,0.55)':'rgba(255,77,109,0.55)';
     ctx.fillRect(x-bW/2,Math.min(y,z),bW,Math.max(1,Math.abs(y-z)));
   });
-
   // Signal line
   ctx.strokeStyle='rgba(240,180,41,0.85)';ctx.lineWidth=1.5;
-  ctx.beginPath();
-  sigS.forEach((v,i)=>{i===0?ctx.moveTo(xS(i),yS(v)):ctx.lineTo(xS(i),yS(v));});
-  ctx.stroke();
-
+  ctx.beginPath();sigS.forEach((v,i)=>{i===0?ctx.moveTo(xS(i),yS(v)):ctx.lineTo(xS(i),yS(v));});ctx.stroke();
   // MACD line
   ctx.strokeStyle='rgba(77,159,255,0.9)';ctx.lineWidth=2;
-  ctx.beginPath();
-  macdS.forEach((v,i)=>{i===0?ctx.moveTo(xS(i),yS(v)):ctx.lineTo(xS(i),yS(v));});
-  ctx.stroke();
-
-  // Mark cross
+  ctx.beginPath();macdS.forEach((v,i)=>{i===0?ctx.moveTo(xS(i),yS(v)):ctx.lineTo(xS(i),yS(v));});ctx.stroke();
+  // Cross dot
   const cb=d.result?.cross_bar;
   if(cb&&cb<n){
-    const xi=xS(n-1-cb);
-    ctx.fillStyle='rgba(0,229,160,0.8)';
-    ctx.beginPath();ctx.arc(xi,yS(macdS[n-1-cb]),4,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(0,229,160,0.9)';
+    ctx.beginPath();ctx.arc(xS(n-1-cb),yS(macdS[n-1-cb]),3,0,Math.PI*2);ctx.fill();
   }
-
-  // Current values label
-  ctx.fillStyle='rgba(77,159,255,0.9)';ctx.font='8px DM Mono,monospace';ctx.textAlign='left';
-  const mv=macdS[macdS.length-1];
-  ctx.fillText('MACD: '+(mv<0.001?mv.toFixed(6):mv.toFixed(4)),W-pad.r+4,pad.t+10);
-  const sv=sigS[sigS.length-1];
-  ctx.fillStyle='rgba(240,180,41,0.9)';
-  ctx.fillText('SIG: '+(sv<0.001?sv.toFixed(6):sv.toFixed(4)),W-pad.r+4,pad.t+22);
+  // Labels
+  const mv=macdS[macdS.length-1],sv=sigS[sigS.length-1];
+  ctx.font='7px DM Mono,monospace';ctx.textAlign='left';
+  ctx.fillStyle='rgba(77,159,255,0.85)';
+  ctx.fillText('M:'+(Math.abs(mv)<0.001?mv.toFixed(6):mv.toFixed(4)),W-pad.r+3,pad.t+8);
+  ctx.fillStyle='rgba(240,180,41,0.85)';
+  ctx.fillText('S:'+(Math.abs(sv)<0.001?sv.toFixed(6):sv.toFixed(4)),W-pad.r+3,pad.t+18);
 }
 
-window.addEventListener('load',()=>{
-  const sb=document.querySelector('#fg4 .fc');
-  if(sb){sb.classList.add('on');sb.textContent='SIGNAL ▼';}
-});
-setInterval(()=>{document.getElementById('ft').textContent=new Date().toLocaleString();},1000);
+window.addEventListener('load',()=>{});
+setInterval(()=>{document.getElementById('ft').textContent=new Date().toLocaleTimeString();},1000);
 </script>
 </body>
 </html>"""
-
 if __name__ == "__main__":
     auto_scan["next_run"] = time.time() + 30
     threading.Thread(target=auto_scan_worker, daemon=True).start()
