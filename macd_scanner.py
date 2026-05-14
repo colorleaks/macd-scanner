@@ -26,6 +26,7 @@ cache = {
 
 auto_scan = {"enabled": True, "interval": 15, "last_run": 0, "next_run": 0}
 
+
 # ── HTTP ───────────────────────────────────────────────────────────────────
 def get(endpoint, params=None, timeout=15):
     try:
@@ -472,6 +473,10 @@ def auto_scan_worker():
             print(f"[AUTO] {e}")
         time.sleep(15)
 
+# Start worker at module level (works with gunicorn AND direct run)
+auto_scan["next_run"] = time.time() + 30
+threading.Thread(target=auto_scan_worker, daemon=True).start()
+
 # ── Routes ─────────────────────────────────────────────────────────────────
 @app.route("/")
 def index():
@@ -898,10 +903,9 @@ function updateCountdown(s){
 // ── Scan ──────────────────────────────────────────────────────────────────
 function setScanUI(scanning){
   const btn=document.getElementById('scanBtn');
-  const wrap=document.getElementById('prog-wrap');
   btn.disabled=scanning;
   btn.textContent=scanning?'⏳':'⚡ SCAN';
-  wrap.style.display=scanning?'block':'none';
+  document.getElementById('prog-wrap').style.display=scanning?'block':'none';
   if(!scanning){
     document.getElementById('prog-fill').style.width='0%';
     document.getElementById('prog-fill').classList.remove('ind');
@@ -909,22 +913,27 @@ function setScanUI(scanning){
 }
 
 function manualScan(){
-  if(isScanning) return;
-  isScanning=true;
+  // Always allow clicking — reset state first
+  clearInterval(scanPoll);
+  scanPoll=null;
+  isScanning=false;
+
   setScanUI(true);
-  document.getElementById('prog-label').textContent='Starting scan...';
+  document.getElementById('prog-label').textContent='Connecting to Binance...';
   document.getElementById('prog-fill').classList.add('ind');
   document.getElementById('alert-box').style.display='none';
 
   fetch('/api/scan',{method:'POST'})
     .then(r=>r.json())
     .then(d=>{
-      console.log('Scan response:',d.status);
-      if(!scanPoll) scanPoll=setInterval(pollStatus,1500);
+      if(d.status==='started'||d.status==='already_scanning'){
+        isScanning=true;
+        scanPoll=setInterval(pollStatus,1500);
+      } else {
+        setScanUI(false);
+      }
     })
-    .catch(e=>{
-      console.error('Scan failed:',e);
-      isScanning=false;
+    .catch(function(){
       setScanUI(false);
     });
 }
@@ -933,7 +942,7 @@ function startPolling(){
   if(scanPoll) return;
   isScanning=true;
   setScanUI(true);
-  document.getElementById('prog-label').textContent='Auto scan running...';
+  document.getElementById('prog-label').textContent='Scanning...';
   document.getElementById('prog-fill').classList.add('ind');
   scanPoll=setInterval(pollStatus,1500);
 }
@@ -1309,8 +1318,7 @@ setInterval(()=>{document.getElementById('ft').textContent=new Date().toLocaleTi
 </body>
 </html>"""
 if __name__ == "__main__":
-    auto_scan["next_run"] = time.time() + 30
-    threading.Thread(target=auto_scan_worker, daemon=True).start()
+    pass  # worker already started at module level
     print("\n" + "="*52)
     print("  MACDScan — 4H MACD Crossover Scanner")
     print("  Pullback Entry · Just Crossed · Watch")
