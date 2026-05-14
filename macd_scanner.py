@@ -898,8 +898,12 @@ function updateCountdown(s){
 // ── Scan ──────────────────────────────────────────────────────────────────
 function manualScan(){
   if(scanPoll) return;
-  startPolling();
-  fetch('/api/scan',{method:'POST'}).catch(()=>{});
+  fetch('/api/scan',{method:'POST'})
+    .then(r=>r.json())
+    .then(d=>{
+      if(d.status==='started'||d.status==='already_scanning') startPolling();
+    })
+    .catch(()=>{ startPolling(); }); // start anyway as fallback
 }
 function startPolling(){
   if(scanPoll) return;
@@ -934,12 +938,15 @@ function pollStatus(){
       document.getElementById('prog-fill').style.width=d.progress_pct+'%';
     }
     updateCountdown(d.next_scan_in||0);
-    if(!d.scanning&&d.coins&&d.coins.length>=0&&d.last_scan){
-      stopPolling(); coins=d.coins;
+    if(!d.scanning&&d.last_scan){
+      stopPolling();
+      coins=d.coins||[];
       updateStats(d.stats,d.last_scan);
-      showAlert(d.coins); render();
+      showAlert(coins);
+      render();
+    } else if(!d.scanning&&d.error){
+      stopPolling();
     }
-    if(d.error&&!d.scanning) stopPolling();
   }).catch(()=>{});
 }
 // Background 5s check
@@ -948,9 +955,14 @@ setInterval(()=>{
   fetch('/api/status').then(r=>r.json()).then(d=>{
     updateCountdown(d.next_scan_in||0);
     if(d.scanning){startPolling();return;}
-    if(d.last_scan&&d.coins){
+    if(d.last_scan&&d.coins&&d.coins.length>=0){
       const nt=d.last_scan.slice(11),ct=document.getElementById('s-time').textContent;
-      if(nt!==ct){coins=d.coins;updateStats(d.stats,d.last_scan);showAlert(d.coins);render();}
+      if(nt!==ct){
+        coins=d.coins;
+        updateStats(d.stats,d.last_scan);
+        showAlert(coins);
+        render();
+      }
     }
   }).catch(()=>{});
 },5000);
@@ -1024,7 +1036,8 @@ const tags=c=>[
 function renderCards(data){
   const el=document.getElementById('cards');
   if(!data.length){
-    el.innerHTML='<div class="empty"><div class="empty-icon">🔍</div><div>No signals match filters</div></div>';
+    const msg = coins.length>0 ? 'No signals match current filters' : 'Scan complete — no MACD signals found';
+    el.innerHTML='<div class="empty"><div class="empty-icon">🔍</div><div>'+msg+'</div></div>';
     return;
   }
   el.innerHTML=data.slice(0,80).map((c,i)=>`
