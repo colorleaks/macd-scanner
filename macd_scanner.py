@@ -474,7 +474,9 @@ def auto_scan_worker():
 
 # ── Routes ─────────────────────────────────────────────────────────────────
 @app.route("/")
-def index(): return render_template_string(HTML)
+def index():
+    from flask import Response
+    return Response(HTML, mimetype='text/html')
 
 @app.route("/health")
 def health():
