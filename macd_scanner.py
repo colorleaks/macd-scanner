@@ -760,7 +760,7 @@ footer{padding:10px 16px;border-top:1px solid var(--border);font-size:9px;color:
       </select>
     </div>
     <div class="countdown" id="countdown">—</div>
-    <button class="btn btn-primary btn-sm" id="scanBtn" onclick="manualScan()">⚡ SCAN</button>
+    <button class="btn btn-primary btn-sm" id="scanBtn">⚡ SCAN</button>
   </div>
 </header>
 
@@ -869,7 +869,7 @@ footer{padding:10px 16px;border-top:1px solid var(--border);font-size:9px;color:
 
 <script>
 let coins=[], filt={sig:'all',zero:'all',score:0}, sortDesc=true;
-let scanPoll=null, autoOn=true;
+let scanPoll=null, autoOn=true, isScanning=false;
 
 // ── Auto Scan ─────────────────────────────────────────────────────────────
 function toggleAuto(){
@@ -896,36 +896,53 @@ function updateCountdown(s){
 }
 
 // ── Scan ──────────────────────────────────────────────────────────────────
+function setScanUI(scanning){
+  const btn=document.getElementById('scanBtn');
+  const wrap=document.getElementById('prog-wrap');
+  btn.disabled=scanning;
+  btn.textContent=scanning?'⏳':'⚡ SCAN';
+  wrap.style.display=scanning?'block':'none';
+  if(!scanning){
+    document.getElementById('prog-fill').style.width='0%';
+    document.getElementById('prog-fill').classList.remove('ind');
+  }
+}
+
 function manualScan(){
-  if(scanPoll) return;
+  if(isScanning) return;
+  isScanning=true;
+  setScanUI(true);
+  document.getElementById('prog-label').textContent='Starting scan...';
+  document.getElementById('prog-fill').classList.add('ind');
+  document.getElementById('alert-box').style.display='none';
+
   fetch('/api/scan',{method:'POST'})
     .then(r=>r.json())
     .then(d=>{
-      if(d.status==='started'||d.status==='already_scanning') startPolling();
+      console.log('Scan response:',d.status);
+      if(!scanPoll) scanPoll=setInterval(pollStatus,1500);
     })
-    .catch(()=>{ startPolling(); }); // start anyway as fallback
+    .catch(e=>{
+      console.error('Scan failed:',e);
+      isScanning=false;
+      setScanUI(false);
+    });
 }
+
 function startPolling(){
   if(scanPoll) return;
-  document.getElementById('scanBtn').disabled=true;
-  document.getElementById('scanBtn').textContent='⏳';
-  document.getElementById('prog-wrap').style.display='block';
-  document.getElementById('prog-fill').style.width='0%';
+  isScanning=true;
+  setScanUI(true);
+  document.getElementById('prog-label').textContent='Auto scan running...';
   document.getElementById('prog-fill').classList.add('ind');
-  document.getElementById('prog-label').textContent='Connecting...';
-  document.getElementById('prog-label').style.color='';
-  document.getElementById('alert-box').style.display='none';
   scanPoll=setInterval(pollStatus,1500);
 }
+
 function stopPolling(){
-  clearInterval(scanPoll); scanPoll=null;
-  document.getElementById('scanBtn').disabled=false;
-  document.getElementById('scanBtn').textContent='⚡ SCAN';
-  setTimeout(()=>{
-    document.getElementById('prog-wrap').style.display='none';
-    document.getElementById('prog-fill').style.width='0%';
-    document.getElementById('prog-fill').classList.remove('ind');
-  },2000);
+  clearInterval(scanPoll);
+  scanPoll=null;
+  isScanning=false;
+  setScanUI(false);
 }
 function pollStatus(){
   fetch('/api/status').then(r=>r.json()).then(d=>{
@@ -1036,61 +1053,65 @@ const tags=c=>[
 function renderCards(data){
   const el=document.getElementById('cards');
   if(!data.length){
-    const msg = coins.length>0 ? 'No signals match current filters' : 'Scan complete — no MACD signals found';
-    el.innerHTML='<div class="empty"><div class="empty-icon">🔍</div><div>'+msg+'</div></div>';
+    const msg=coins.length>0?'No signals match current filters':'Scan complete — no MACD signals found';
+    el.innerHTML='<div class="empty"><div class="empty-icon">&#128269;</div><div>'+msg+'</div></div>';
     return;
   }
-  el.innerHTML=data.slice(0,80).map((c,i)=>`
-    <div class="card" onclick="openChart('${c.symbol}','${c.signal_type||''}')">
-      <div class="card-top">
-        <div>
-          <div class="card-pair">${c.base}/USDT</div>
-          <div class="card-vol">$${c.vol24_m}M · ${sigBadge(c.signal_type)}</div>
-        </div>
-        <div class="card-score">
-          <span class="score ${sc(c.score)}">${c.score}</span>
-          ${c.macd_above_zero?'<span style="font-size:9px;color:var(--green)">☀ Above Zero</span>':'<span style="font-size:9px;color:var(--muted)">☁ Below Zero</span>'}
-        </div>
-      </div>
-      <div class="card-mid">
-        <div class="card-cell">
-          <div class="card-cell-lbl">Price</div>
-          <div class="card-cell-val">${fmt(c.price)}</div>
-        </div>
-        <div class="card-cell">
-          <div class="card-cell-lbl">4H%</div>
-          <div class="card-cell-val">${pct(c.chg_4h)}</div>
-        </div>
-        <div class="card-cell">
-          <div class="card-cell-lbl">${c.pullback_pct?'Pullback':'RSI'}</div>
-          <div class="card-cell-val" style="color:${c.pullback_pct?'var(--gold)':rsiC(c.rsi14)}">
-            ${c.pullback_pct?c.pullback_pct.toFixed(1)+'%↓':(c.rsi14?c.rsi14.toFixed(1):'—')}
-          </div>
-        </div>
-        <div class="card-cell">
-          <div class="card-cell-lbl">Cross</div>
-          <div class="card-cell-val" style="color:${(c.cross_bar||99)<=2?'var(--green)':(c.cross_bar||99)<=5?'var(--gold)':'var(--muted)'}">
-            ${c.cross_bar?c.cross_bar+'bars':'—'}
-          </div>
-        </div>
-        <div class="card-cell">
-          <div class="card-cell-lbl">Histogram</div>
-          <div class="card-cell-val" style="color:${(c.histogram||0)>0?'var(--green)':'var(--red)'}">
-            ${c.hist_growing?'▲':c.histogram>c.hist_prev?'↑':'↓'}
-          </div>
-        </div>
-        <div class="card-cell">
-          <div class="card-cell-lbl">Vol</div>
-          <div class="card-cell-val" style="color:${c.vol_confirm?'var(--green)':'var(--muted)'}">
-            ${c.rel_vol?c.rel_vol.toFixed(1)+'x':'—'}
-          </div>
-        </div>
-      </div>
-      <div class="card-bottom">
-        <div class="card-reasons">${(c.reasons||[]).filter(r=>!r.startsWith('⚠')).slice(0,2).join(' · ')}</div>
-        <div class="card-tags">${tags(c)}</div>
-      </div>
-    </div>`).join('');
+  const rows=data.slice(0,80).map(function(c,i){
+    const sc=c.score>=70?'s-hot':c.score>=50?'s-good':c.score>=35?'s-watch':'s-low';
+    const sig=c.signal_type==='PULLBACK ENTRY'?'<span class="sig-badge sig-pullback">&#127919; PULLBACK</span>':
+               c.signal_type==='JUST CROSSED'?'<span class="sig-badge sig-crossed">&#9889; CROSSED</span>':
+               '<span class="sig-badge sig-watch">&#128256; WATCH</span>';
+    const zeroColor=c.macd_above_zero?'var(--green)':'var(--muted)';
+    const zeroText=c.macd_above_zero?'&#9728; Above Zero':'&#9729; Below Zero';
+    const p4h=c.chg_4h==null?'—':(c.chg_4h>0?'+':'')+c.chg_4h.toFixed(2)+'%';
+    const p4hColor=c.chg_4h==null?'var(--muted)':c.chg_4h>0?'var(--green)':'var(--red)';
+    const pullVal=c.pullback_pct?c.pullback_pct.toFixed(1)+'%↓':(c.rsi14?c.rsi14.toFixed(1):'—');
+    const pullColor=c.pullback_pct?'var(--gold)':(c.rsi14<35?'var(--gold)':c.rsi14<50?'var(--green)':c.rsi14<65?'var(--text)':'var(--red)');
+    const pullLabel=c.pullback_pct?'Pullback':'RSI';
+    const crossColor=(c.cross_bar||99)<=2?'var(--green)':(c.cross_bar||99)<=5?'var(--gold)':'var(--muted)';
+    const crossText=c.cross_bar?c.cross_bar+'bars':'—';
+    const histColor=(c.histogram||0)>0?'var(--green)':'var(--red)';
+    const histText=c.hist_growing?'&#9650;':c.histogram>c.hist_prev?'&#8679;':'&#8681;';
+    const volColor=c.vol_confirm?'var(--green)':'var(--muted)';
+    const volText=c.rel_vol?c.rel_vol.toFixed(1)+'x':'—';
+    const tgs=[
+      c.macd_above_zero?'<span class="tag t-green">ZERO+</span>':'',
+      c.hist_growing?'<span class="tag t-green">HIST&#9650;</span>':'',
+      c.vol_confirm?'<span class="tag t-blue">VOL&#10003;</span>':'',
+      c.above_ma50?'<span class="tag t-green">MA50&#8679;</span>':'',
+      c.pullback_valid?'<span class="tag t-gold">PULLBACK</span>':'',
+      (c.rsi14&&c.rsi14>70)?'<span class="tag t-red">RSI OB</span>':'',
+    ].filter(Boolean).join('');
+    const reasons=(c.reasons||[]).filter(function(r){return r.indexOf('⚠')===-1;}).slice(0,2).join(' · ');
+    const price=fmt(c.price);
+
+    return '<div class="card" onclick="openChart(''+c.symbol+'',''+( c.signal_type||'')+'')">'+
+      '<div class="card-top">'+
+        '<div>'+
+          '<div class="card-pair">'+c.base+'/USDT</div>'+
+          '<div class="card-vol">$'+c.vol24_m+'M · '+sig+'</div>'+
+        '</div>'+
+        '<div class="card-score">'+
+          '<span class="score '+sc+'">'+c.score+'</span>'+
+          '<div style="font-size:9px;color:'+zeroColor+'">'+zeroText+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="card-mid">'+
+        '<div class="card-cell"><div class="card-cell-lbl">Price</div><div class="card-cell-val">'+price+'</div></div>'+
+        '<div class="card-cell"><div class="card-cell-lbl">4H%</div><div class="card-cell-val" style="color:'+p4hColor+'">'+p4h+'</div></div>'+
+        '<div class="card-cell"><div class="card-cell-lbl">'+pullLabel+'</div><div class="card-cell-val" style="color:'+pullColor+'">'+pullVal+'</div></div>'+
+        '<div class="card-cell"><div class="card-cell-lbl">Cross</div><div class="card-cell-val" style="color:'+crossColor+'">'+crossText+'</div></div>'+
+        '<div class="card-cell"><div class="card-cell-lbl">Histogram</div><div class="card-cell-val" style="color:'+histColor+'">'+histText+'</div></div>'+
+        '<div class="card-cell"><div class="card-cell-lbl">Vol</div><div class="card-cell-val" style="color:'+volColor+'">'+volText+'</div></div>'+
+      '</div>'+
+      '<div class="card-bottom">'+
+        '<div class="card-reasons">'+reasons+'</div>'+
+        '<div class="card-tags">'+tgs+'</div>'+
+      '</div>'+
+    '</div>';
+  });
+  el.innerHTML=rows.join('');
 }
 
 function renderTable(data){
@@ -1107,7 +1128,7 @@ function renderTable(data){
       <td>${pct(c.chg_4h)}</td>
       <td>${pct(c.chg_24h)}</td>
       <td>${sigBadge(c.signal_type)}</td>
-      <td style="color:${(c.histogram||0)>0?'var(--green)':'var(--red)';font-size:10px}">${c.hist_growing?'▲':c.histogram>c.hist_prev?'↑':'↓'}</td>
+      <td style="font-size:10px"><span style="color:${(c.histogram||0)>0?'var(--green)':'var(--red)'}">${c.hist_growing?'▲':c.histogram>c.hist_prev?'↑':'↓'}</span></td>
       <td>${c.macd_above_zero?'<span style="color:var(--green)">☀</span>':'<span style="color:var(--muted)">☁</span>'}</td>
       <td style="color:${(c.cross_bar||99)<=2?'var(--green)':(c.cross_bar||99)<=5?'var(--gold)':'var(--muted)'}">${c.cross_bar?c.cross_bar+'b':'—'}</td>
       <td style="color:${c.pullback_pct&&c.pullback_pct<=4?'var(--gold)':'var(--muted)'}">${c.pullback_pct?c.pullback_pct.toFixed(1)+'%':'—'}</td>
@@ -1266,7 +1287,23 @@ function drawMACDChart(d){
   ctx.fillText('S:'+(Math.abs(sv)<0.001?sv.toFixed(6):sv.toFixed(4)),W-pad.r+3,pad.t+18);
 }
 
-window.addEventListener('load',()=>{});
+window.addEventListener('load',()=>{
+  // Attach scan button
+  document.getElementById('scanBtn').addEventListener('click', function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    manualScan();
+  });
+  // Check if already scanning on load
+  fetch('/api/status').then(r=>r.json()).then(d=>{
+    if(d.scanning) startPolling();
+    if(d.last_scan&&d.coins&&d.coins.length>0){
+      coins=d.coins;
+      updateStats(d.stats,d.last_scan);
+      render();
+    }
+  }).catch(()=>{});
+});
 setInterval(()=>{document.getElementById('ft').textContent=new Date().toLocaleTimeString();},1000);
 </script>
 </body>
