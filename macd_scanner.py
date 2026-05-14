@@ -27,7 +27,7 @@ cache = {
 auto_scan = {"enabled": True, "interval": 15, "last_run": 0, "next_run": 0}
 
 # ── HTTP ───────────────────────────────────────────────────────────────────
-def get(endpoint, params=None, timeout=8):
+def get(endpoint, params=None, timeout=15):
     try:
         r = SESSION.get(BASE + endpoint, params=params, timeout=timeout)
         r.raise_for_status()
@@ -395,7 +395,7 @@ def do_scan():
             [t for t in tickers if t["symbol"].endswith("USDT")
              and float(t.get("quoteVolume", 0)) > 500_000],
             key=lambda x: float(x.get("quoteVolume", 0)), reverse=True
-        )[:300]
+        )[:150]
 
         cache["progress"] = f"Step 2/2 — Scanning {len(usdt)} pairs for MACD signals..."
 
@@ -430,7 +430,7 @@ def do_scan():
                     cache["progress"]     = f"Step 2/2 — [{done[0]}/{total}] scanning..."
                     cache["progress_pct"] = int((done[0] / total) * 95)
 
-        with ThreadPoolExecutor(max_workers=20) as ex:
+        with ThreadPoolExecutor(max_workers=10) as ex:
             futures = {ex.submit(process, t): t for t in usdt}
             for f in as_completed(futures, timeout=150):
                 try:
@@ -450,8 +450,11 @@ def do_scan():
         cache["progress_pct"] = 100
 
     except Exception as e:
-        cache["error"]    = str(e)
-        cache["progress"] = f"Error: {str(e)[:80]}"
+        import traceback
+        err = str(e) + " | " + traceback.format_exc()[-200:]
+        cache["error"]    = err
+        cache["progress"] = f"Error: {str(e)[:120]}"
+        print(f"[SCAN ERROR] {err}")
     finally:
         cache["scanning"]     = False
         cache["progress_pct"] = 100
@@ -473,10 +476,22 @@ def auto_scan_worker():
 @app.route("/")
 def index(): return render_template_string(HTML)
 
+@app.route("/health")
+def health():
+    return jsonify({
+        "status": "ok",
+        "scanning": cache["scanning"],
+        "coins": len(cache["coins"]),
+        "last_scan": cache["last_scan"],
+        "error": cache["error"],
+        "progress": cache["progress"],
+    })
+
 @app.route("/api/scan", methods=["POST"])
 def api_scan():
     if cache["scanning"]: return jsonify({"status": "already_scanning"})
-    threading.Thread(target=do_scan, daemon=True).start()
+    t = threading.Thread(target=do_scan, daemon=True)
+    t.start()
     return jsonify({"status": "started"})
 
 @app.route("/api/status")
@@ -519,7 +534,8 @@ def autoscan_config():
 def autoscan_runnow():
     if cache["scanning"]: return jsonify({"status": "already_scanning"})
     auto_scan["next_run"] = time.time() + auto_scan["interval"] * 60
-    threading.Thread(target=do_scan, daemon=True).start()
+    t = threading.Thread(target=do_scan, daemon=True)
+    t.start()
     return jsonify({"status": "started"})
 
 @app.route("/api/chart/<symbol>")
@@ -858,9 +874,10 @@ function updateCountdown(s){
 // ── Scan ──────────────────────────────────────────────────────────────────
 function manualScan(){
   if(scanPoll) return;
-  fetch('/api/autoscan/runnow',{method:'POST'}).then(r=>r.json()).then(d=>{
-    if(d.status==='started') startPolling();
-  }).catch(()=>{});
+  startPolling();
+  fetch('/api/scan',{method:'POST'}).then(r=>r.json()).then(d=>{
+    console.log('Scan started:', d.status);
+  }).catch(e=>{ console.error('Scan error:', e); });
 }
 function startPolling(){
   if(scanPoll) return;
